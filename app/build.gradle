@@ -1,0 +1,46 @@
+buildscript {
+    dependencies {
+        classpath "com.android.tools.build:gradle:" + androidToolsBuildGradle
+        classpath "com.neenbedankt.gradle.plugins:android-apt:1.4"
+    }
+}
+
+apply plugin: 'com.android.application'
+apply plugin: 'android-apt'
+
+android {
+    compileSdkVersion androidCompileSdkVersion
+    buildToolsVersion androidBuildToolsVersion
+
+    defaultConfig {
+        minSdkVersion androidMinSdkVersion
+        targetSdkVersion androidTargetSdkVersion
+        applicationId "com.training.robertb.lwptraining"
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+apt {
+    arguments {
+        androidManifestFile variant.outputs[0].processResources.manifestFile
+        resourcePackageName 'com.training.robertb.lwptraining'
+        logLevel "WARN"
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile 'com.android.support:appcompat-v7:21.0.3'
+    compile 'com.marvinlabs:android-slideshow-widget:0.4.+@aar'
+    compile files('libs/universal-image-loader-1.9.0.jar')
+
+    compile("org.androidannotations:androidannotations-api:3.2")
+    apt "org.androidannotations:androidannotations:3.2"
+}

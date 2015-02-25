@@ -1,0 +1,25 @@
+configure(allprojects) { project ->
+    buildscript {
+        repositories {
+            jcenter()
+        }
+    }
+}
+
+
+subprojects {
+    group = 'com.jaspersoft.android'
+    description = 'js-android-jaspermobile'
+
+    ext.androidToolsBuildGradle = '1.1.0'
+    ext.androidBuildToolsVersion = '21.1.2';
+    ext.androidMinSdkVersion = 15;
+    ext.androidCompileSdkVersion = 21;
+    ext.androidTargetSdkVersion = 21;
+
+
+    repositories {
+        jcenter()
+        maven { url "https://repo.commonsware.com.s3.amazonaws.com"}
+    }
+}
