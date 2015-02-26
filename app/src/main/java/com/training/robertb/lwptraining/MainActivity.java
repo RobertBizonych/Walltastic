@@ -5,42 +5,70 @@ import android.app.WallpaperManager;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
+import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
 import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-
-import com.marvinlabs.widget.slideshow.SlideShowView;
-import com.marvinlabs.widget.slideshow.adapter.RemoteBitmapAdapter;
-import com.marvinlabs.widget.slideshow.adapter.ResourceBitmapAdapter;
 
 import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.Click;
 import org.androidannotations.annotations.EActivity;
 import org.androidannotations.annotations.ViewById;
 
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
 @EActivity(R.layout.activity_main)
 public class MainActivity extends ActionBarActivity {
+    private static final long SLIDESHOW_IMAGE_DURATION = 3000;
     @ViewById
-    SlideShowView slideShow;
+    ViewPager slideShow;
+    private SlideShowAdapter adapter;
     private static final int INTENT_REQUEST_GET_IMAGES = 13;
-    private RemoteBitmapAdapter adapter;
+    boolean showMustGoOn = true;
     private String[] imagesUri;
+    private Handler slideShowHandler = new Handler();
+    private Runnable runSlideShow = new Runnable() {
+        public void run() {
+            int position = slideShow.getCurrentItem();
+            if (adapter != null) {
+                if (position == adapter.getCount()) {
+                    slideShow.setCurrentItem(0, false);
+                } else {
+                    // Second parameter of false turns ViewPager scroll animation off
+                    slideShow.setCurrentItem(position + 1, true);
+                    slideShowHandler.postDelayed(runSlideShow, SLIDESHOW_IMAGE_DURATION);
+                }
+            }
+            showMustGoOn = false;
+        }
+    };
 
     @AfterViews
     final void init() {
+        slideShow.setPageTransformer(true, new ZoomOutPageTransformer());
         if (adapter == null) {
-            ResourceBitmapAdapter bitmapAdapter =
-                    new ResourceBitmapAdapter(this, new int[]{R.drawable.cat_icon});
-            slideShow.setAdapter(bitmapAdapter);
-            slideShow.play();
+            int currentOSVersion = Build.VERSION.SDK_INT;
+            if (currentOSVersion >= Build.VERSION_CODES.JELLY_BEAN) {
+                //noinspection Resolving API
+                slideShow.setBackground(getResources().getDrawable(R.drawable.cat_icon));
+            } else {
+                slideShow.setBackgroundResource(R.drawable.cat_icon);
+            }
+        } else {
+            playSlideShow();
         }
+    }
+
+    private void playSlideShow() {
+        slideShow.setBackgroundColor(getResources().getColor(android.R.color.transparent));
+        adapter = new SlideShowAdapter(this, imagesUri);
+        slideShow.setAdapter(adapter);
     }
 
     @Click
@@ -53,11 +81,13 @@ public class MainActivity extends ActionBarActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (resultCode == Activity.RESULT_OK && requestCode == INTENT_REQUEST_GET_IMAGES) {
-            imagesUri = data.getStringArrayExtra("images");
+            ArrayList<String> receivedData = data.getStringArrayListExtra("images");
+            imagesUri = new String[receivedData.size()];
+            imagesUri = receivedData.toArray(imagesUri);
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
             preferences.edit().putStringSet("images", transform(imagesUri)).apply();
 
-//            playSlideShow();
+            playSlideShow();
         }
     }
 
@@ -71,18 +101,6 @@ public class MainActivity extends ActionBarActivity {
         return images;
     }
 
-    private void playSlideShow() {
-        Collection<String> images = new HashSet<>();
-
-        for (String imageURL : imagesUri) {
-            images.add("file://" + imageURL);
-        }
-        adapter = new RemoteBitmapAdapter(this, images);
-
-        slideShow.setAdapter(adapter);
-        slideShow.play();
-    }
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -92,17 +110,8 @@ public class MainActivity extends ActionBarActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
+        return id == R.id.action_settings || super.onOptionsItemSelected(item);
     }
 
     @Click
@@ -114,28 +123,28 @@ public class MainActivity extends ActionBarActivity {
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        slideShow.stop();
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        slideShow.stop();
+    public void onBackPressed() {
+        if (slideShow.getCurrentItem() == 0) {
+            super.onBackPressed();
+        } else {
+            slideShow.setCurrentItem(slideShow.getCurrentItem() - 1);
+            if (showMustGoOn) {
+                runSlideShow.run();
+            }
+        }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        slideShow.pause();
+        if (slideShowHandler != null) {
+            slideShowHandler.removeCallbacks(runSlideShow);
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (adapter != null) {
-            slideShow.play();
-        }
+        slideShowHandler.postDelayed(runSlideShow, 1000);
     }
 }

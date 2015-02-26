@@ -11,6 +11,7 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.util.Log;
@@ -29,7 +30,10 @@ import org.androidannotations.annotations.EActivity;
 import org.androidannotations.annotations.UiThread;
 import org.androidannotations.annotations.ViewById;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -98,12 +102,12 @@ public class GridActivity extends Activity implements LoaderManager.LoaderCallba
         final int length = thumbnailsSelection.length;
         int selectedCount = 0;
         String selectImages = "";
-        String[] selectedPaths = new String[length];
+        ArrayList<String> selectedPaths = new ArrayList<>();
         for (int i = 0; i < length; i++) {
             if (thumbnailsSelection[i]) {
                 selectedCount++;
                 selectImages = selectImages + arrPath[i] + "|";
-                selectedPaths[i] = arrPath[i];
+                selectedPaths.add(arrPath[i]);
             }
         }
         if (selectedCount == 0) {
@@ -117,7 +121,7 @@ public class GridActivity extends Activity implements LoaderManager.LoaderCallba
             Log.d("SelectedImages", selectImages);
 
             Intent passSelection = new Intent();
-            passSelection.putExtra("images", selectedPaths);
+            passSelection.putStringArrayListExtra("images", selectedPaths);
             setResult(Activity.RESULT_OK, passSelection);
             finish();
         }

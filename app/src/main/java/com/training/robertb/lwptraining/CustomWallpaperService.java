@@ -17,6 +17,10 @@ import android.view.Display;
 import android.view.SurfaceHolder;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.LinearInterpolator;
+import android.view.animation.RotateAnimation;
 import android.widget.ImageView;
 
 import java.io.File;
@@ -37,13 +41,13 @@ public class CustomWallpaperService extends WallpaperService {
 
     private class CustomWallpaperEngine extends Engine {
         private final Display mDisplay;
+        private final int requiredWidth;
+        private final int requiredHeight;
         private final Rect mRect;
 
         private final Paint paint = new Paint();
         private final ArrayDeque<String> pictureQueue = new ArrayDeque<>();
         private final ImageView slideShow;
-        private final int requiredWidth;
-        private final int requiredHeight;
         private boolean visible = true;
 
         private int maxImageCount;
@@ -83,13 +87,13 @@ public class CustomWallpaperService extends WallpaperService {
             WindowManager windowManager = (WindowManager)
                     getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
             mDisplay = windowManager.getDefaultDisplay();
+            requiredWidth = mDisplay.getWidth();
+            requiredHeight = mDisplay.getHeight();
 
             mRect = new Rect();
             mRect.set(0, 0, mDisplay.getWidth(), mDisplay.getHeight());
 
             slideShow = new ImageView(context);
-            requiredWidth = mDisplay.getWidth();
-            requiredHeight = mDisplay.getHeight();
         }
 
         @Override
@@ -152,25 +156,55 @@ public class CustomWallpaperService extends WallpaperService {
                         View.MeasureSpec.EXACTLY);
                 slideShow.measure(widthSpec, heightSpec);
 
-
-                // First decode with inJustDecodeBounds=true to check dimensions
-                final BitmapFactory.Options options = new BitmapFactory.Options();
-                options.inJustDecodeBounds = true;
-                BitmapFactory.decodeFile(pictureFile.getPath(), options);
-
-                options.inPreferredConfig = Bitmap.Config.RGB_565;
-                options.inSampleSize = calculateInSampleSize(options);
-                options.inJustDecodeBounds = false;
-
-                Bitmap bitmap = BitmapFactory.decodeFile(pictureFile.getPath(), options);
-                slideShow.setImageBitmap(bitmap);
+                slideShow.setImageBitmap(optimizeBitmap(pictureFile));
 
                 //Lay the view out at the rect width and height
                 slideShow.layout(0, 0, mRect.width(), mRect.height());
 
                 canvas.save();
+
+//                RotateAnimation anim = new RotateAnimation(0f, 350f, 15f, 15f);
+//                anim.setInterpolator(new LinearInterpolator());
+//                anim.setRepeatCount(Animation.INFINITE);
+//                anim.setDuration(700);
+//                slideShow.startAnimation(anim);
+
                 slideShow.draw(canvas);
             }
+        }
+
+        public void imageViewAnimatedChange(Context c, final ImageView v, final Bitmap new_image) {
+            final Animation anim_out = AnimationUtils.loadAnimation(c, android.R.anim.fade_out);
+            final Animation anim_in  = AnimationUtils.loadAnimation(c, android.R.anim.fade_in);
+            anim_out.setAnimationListener(new Animation.AnimationListener()
+            {
+                @Override public void onAnimationStart(Animation animation) {}
+                @Override public void onAnimationRepeat(Animation animation) {}
+                @Override public void onAnimationEnd(Animation animation)
+                {
+                    v.setImageBitmap(new_image);
+                    anim_in.setAnimationListener(new Animation.AnimationListener() {
+                        @Override public void onAnimationStart(Animation animation) {}
+                        @Override public void onAnimationRepeat(Animation animation) {}
+                        @Override public void onAnimationEnd(Animation animation) {}
+                    });
+                    v.startAnimation(anim_in);
+                }
+            });
+            v.startAnimation(anim_out);
+        }
+
+        private Bitmap optimizeBitmap(File pictureFile) {
+            // First decode with inJustDecodeBounds=true to check dimensions
+            final BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile(pictureFile.getPath(), options);
+
+            options.inPreferredConfig = Bitmap.Config.RGB_565;
+            options.inSampleSize = calculateInSampleSize(options);
+            options.inJustDecodeBounds = false;
+
+            return BitmapFactory.decodeFile(pictureFile.getPath(), options);
         }
 
         private int calculateInSampleSize(BitmapFactory.Options options) {
@@ -191,8 +225,6 @@ public class CustomWallpaperService extends WallpaperService {
                     inSampleSize *= 2;
                 }
             }
-            Log.e("SAMPLE_SIZE", "" + inSampleSize);
-
             return inSampleSize;
         }
 

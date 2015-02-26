@@ -38,7 +38,6 @@ apt {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'com.android.support:appcompat-v7:21.0.3'
-    compile 'com.marvinlabs:android-slideshow-widget:0.4.+@aar'
     compile files('libs/universal-image-loader-1.9.0.jar')
 
     compile("org.androidannotations:androidannotations-api:3.2")
