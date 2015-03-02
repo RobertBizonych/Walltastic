@@ -30,7 +30,6 @@ public class MainActivity extends ActionBarActivity {
     ViewPager slideShow;
     private SlideShowAdapter adapter;
     private static final int INTENT_REQUEST_GET_IMAGES = 13;
-    boolean showMustGoOn = true;
     private String[] imagesUri;
     private Handler slideShowHandler = new Handler();
     private Runnable runSlideShow = new Runnable() {
@@ -42,10 +41,9 @@ public class MainActivity extends ActionBarActivity {
                 } else {
                     // Second parameter of false turns ViewPager scroll animation off
                     slideShow.setCurrentItem(position + 1, true);
-                    slideShowHandler.postDelayed(runSlideShow, SLIDESHOW_IMAGE_DURATION);
+                    slideShowHandler.postDelayed(this, SLIDESHOW_IMAGE_DURATION);
                 }
             }
-            showMustGoOn = false;
         }
     };
 
@@ -128,9 +126,6 @@ public class MainActivity extends ActionBarActivity {
             super.onBackPressed();
         } else {
             slideShow.setCurrentItem(slideShow.getCurrentItem() - 1);
-            if (showMustGoOn) {
-                runSlideShow.run();
-            }
         }
     }
 

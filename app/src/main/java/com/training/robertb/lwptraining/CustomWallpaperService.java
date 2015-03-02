@@ -1,7 +1,6 @@
 package com.training.robertb.lwptraining;
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -9,18 +8,16 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.os.Build;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.service.wallpaper.WallpaperService;
-import android.util.Log;
 import android.view.Display;
 import android.view.SurfaceHolder;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import android.view.animation.LinearInterpolator;
-import android.view.animation.RotateAnimation;
 import android.widget.ImageView;
 
 import java.io.File;
@@ -40,6 +37,7 @@ public class CustomWallpaperService extends WallpaperService {
     }
 
     private class CustomWallpaperEngine extends Engine {
+        public static final int TRANSITION_DELAY = 0;
         private final Display mDisplay;
         private final int requiredWidth;
         private final int requiredHeight;
@@ -83,6 +81,7 @@ public class CustomWallpaperService extends WallpaperService {
             imagesSet = preferences.getStringSet("images", Collections.EMPTY_SET);
             paint.setAntiAlias(true);
             handler.post(drawRunner);
+//            drawRunner.run();
 
             WindowManager windowManager = (WindowManager)
                     getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
@@ -132,66 +131,74 @@ public class CustomWallpaperService extends WallpaperService {
             if (isInitialState()) {
                 createCatQueue();
             }
-            drawOnCanvas();
-            scheduleNextDrawEvent();
+
+            scheduleNextFadeEvent();
         }
 
-        private void scheduleNextDrawEvent() {
+        private void scheduleNextFadeEvent() {
+            String path;
             handler.removeCallbacks(drawRunner);
             if (visible) {
-                handler.postDelayed(drawRunner, 1000);
+                if (alphaPaint.getAlpha() >= 10) {
+                    path = pictureQueue.peek();
+                    handler.postDelayed(drawRunner, 100);
+                } else {
+                    path = pictureQueue.pop();
+                    handler.post(drawRunner);
+                }
+                drawOnCanvas(path);
             }
         }
 
-        private void drawOnCanvas() {
+        private void drawNextPicture() {
             String path = pictureQueue.pop();
+            drawOnCanvas(path);
+            handler.removeCallbacks(drawRunner);
+            if (visible) {
+                handler.postDelayed(drawRunner, TRANSITION_DELAY);
+            }
+        }
+
+        // Initializes the alpha to 255
+        private Paint alphaPaint = new Paint();
+
+        // Need to keep track of the current alpha value
+        private int currentAlpha = 255;
+
+        private void drawOnCanvas(String path) {
             File pictureFile = new File(URI.create("file://" + path));
             if (pictureFile.exists()) {
-                slideShow.setBackgroundColor(Color.WHITE);
+                if (currentAlpha > 0) {
+                    slideShow.setBackgroundColor(Color.WHITE);
 
-                //Measure the view at the exact dimensions (otherwise the text won't center correctly)
-                int widthSpec = View.MeasureSpec.makeMeasureSpec(mRect.width(),
-                        View.MeasureSpec.EXACTLY);
-                int heightSpec = View.MeasureSpec.makeMeasureSpec(mRect.height(),
-                        View.MeasureSpec.EXACTLY);
-                slideShow.measure(widthSpec, heightSpec);
+                    //Measure the view at the exact dimensions (otherwise the text won't center correctly)
+                    int widthSpec = View.MeasureSpec.makeMeasureSpec(mRect.width(),
+                            View.MeasureSpec.EXACTLY);
+                    int heightSpec = View.MeasureSpec.makeMeasureSpec(mRect.height(),
+                            View.MeasureSpec.EXACTLY);
+                    slideShow.measure(widthSpec, heightSpec);
 
-                slideShow.setImageBitmap(optimizeBitmap(pictureFile));
+                    Bitmap slide = optimizeBitmap(pictureFile);
 
-                //Lay the view out at the rect width and height
-                slideShow.layout(0, 0, mRect.width(), mRect.height());
+                    slideShow.setImageBitmap(slide);
 
-                canvas.save();
+                    //Lay the view out at the rect width and height
+                    slideShow.layout(0, 0, mRect.width(), mRect.height());
 
-//                RotateAnimation anim = new RotateAnimation(0f, 350f, 15f, 15f);
-//                anim.setInterpolator(new LinearInterpolator());
-//                anim.setRepeatCount(Animation.INFINITE);
-//                anim.setDuration(700);
-//                slideShow.startAnimation(anim);
+                    alphaPaint.setAlpha(alphaPaint.getAlpha() - 10);
+                    int currentOSVersion = Build.VERSION.SDK_INT;
+                    if (currentOSVersion >= Build.VERSION_CODES.JELLY_BEAN) {
+                        slideShow.setImageAlpha(alphaPaint.getAlpha());
+                    } else {
+                        slideShow.setAlpha(alphaPaint.getAlpha());
+                    }
 
-                slideShow.draw(canvas);
-            }
-        }
+                    canvas.save();
 
-        public void imageViewAnimatedChange(Context c, final ImageView v, final Bitmap new_image) {
-            final Animation anim_out = AnimationUtils.loadAnimation(c, android.R.anim.fade_out);
-            final Animation anim_in  = AnimationUtils.loadAnimation(c, android.R.anim.fade_in);
-            anim_out.setAnimationListener(new Animation.AnimationListener()
-            {
-                @Override public void onAnimationStart(Animation animation) {}
-                @Override public void onAnimationRepeat(Animation animation) {}
-                @Override public void onAnimationEnd(Animation animation)
-                {
-                    v.setImageBitmap(new_image);
-                    anim_in.setAnimationListener(new Animation.AnimationListener() {
-                        @Override public void onAnimationStart(Animation animation) {}
-                        @Override public void onAnimationRepeat(Animation animation) {}
-                        @Override public void onAnimationEnd(Animation animation) {}
-                    });
-                    v.startAnimation(anim_in);
+                    // Draw your character at the current alpha value
+                    slideShow.draw(canvas);
                 }
-            });
-            v.startAnimation(anim_out);
+            }
         }
 
         private Bitmap optimizeBitmap(File pictureFile) {
