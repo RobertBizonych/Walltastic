@@ -12,7 +12,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -94,7 +93,7 @@ public class SlideShowAdapter extends PagerAdapter {
     }
 
     public void destroyVirtualItem(ViewGroup container, int position, Object object){
-        container.removeView((LinearLayout) object);
+        container.removeView((ImageView) object);
     }
 
     private Bitmap optimizeBitmap(File pictureFile) {

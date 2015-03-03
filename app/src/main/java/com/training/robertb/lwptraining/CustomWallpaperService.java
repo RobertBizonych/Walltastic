@@ -16,8 +16,6 @@ import android.view.Display;
 import android.view.SurfaceHolder;
 import android.view.View;
 import android.view.WindowManager;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 
 import java.io.File;
@@ -136,11 +134,10 @@ public class CustomWallpaperService extends WallpaperService {
         }
 
         private void scheduleNextFadeEvent() {
-            String path;
+            String path = pictureQueue.peek();
             handler.removeCallbacks(drawRunner);
             if (visible) {
                 if (alphaPaint.getAlpha() >= 10) {
-                    path = pictureQueue.peek();
                     handler.postDelayed(drawRunner, 100);
                 } else {
                     path = pictureQueue.pop();

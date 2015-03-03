@@ -10,9 +10,11 @@ import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
+import android.text.Html;
 import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Button;
 
 import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.Click;
@@ -20,6 +22,7 @@ import org.androidannotations.annotations.EActivity;
 import org.androidannotations.annotations.ViewById;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -28,6 +31,8 @@ public class MainActivity extends ActionBarActivity {
     private static final long SLIDESHOW_IMAGE_DURATION = 3000;
     @ViewById
     ViewPager slideShow;
+    @ViewById
+    Button setWallpaper;
     private SlideShowAdapter adapter;
     private static final int INTENT_REQUEST_GET_IMAGES = 13;
     private String[] imagesUri;
@@ -49,7 +54,15 @@ public class MainActivity extends ActionBarActivity {
 
     @AfterViews
     final void init() {
+        getSupportActionBar().setBackgroundDrawable(
+                getResources().getDrawable(R.drawable.apptheme_color));
+        getSupportActionBar().setTitle(
+                Html.fromHtml("<font color=\"#FFFFFF\">" + getString(R.string.app_name) + "</font>"));
         slideShow.setPageTransformer(true, new ZoomOutPageTransformer());
+        SharedPreferences preferences =
+                PreferenceManager.getDefaultSharedPreferences(this);
+        ArrayList<String> savedImages =
+                new ArrayList<>(preferences.getStringSet("images", Collections.EMPTY_SET));
         if (adapter == null) {
             int currentOSVersion = Build.VERSION.SDK_INT;
             if (currentOSVersion >= Build.VERSION_CODES.JELLY_BEAN) {
@@ -58,9 +71,15 @@ public class MainActivity extends ActionBarActivity {
             } else {
                 slideShow.setBackgroundResource(R.drawable.cat_icon);
             }
-        } else {
+        }
+
+        if (!savedImages.isEmpty()) {
+            imagesUri = new String[savedImages.size()];
+            imagesUri = savedImages.toArray(imagesUri);
             playSlideShow();
         }
+
+        setWallpaper.setEnabled(adapter != null);
     }
 
     private void playSlideShow() {
@@ -87,6 +106,7 @@ public class MainActivity extends ActionBarActivity {
 
             playSlideShow();
         }
+        setWallpaper.setEnabled(adapter != null);
     }
 
     private Set<String> transform(String[] imagesUri) {
@@ -109,7 +129,11 @@ public class MainActivity extends ActionBarActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        return id == R.id.action_settings || super.onOptionsItemSelected(item);
+        if (id == R.id.action_settings) {
+            PreferencesActivity_.intent(this).start();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Click
@@ -120,26 +144,17 @@ public class MainActivity extends ActionBarActivity {
         startActivity(intent);
     }
 
-    @Override
-    public void onBackPressed() {
-        if (slideShow.getCurrentItem() == 0) {
-            super.onBackPressed();
-        } else {
-            slideShow.setCurrentItem(slideShow.getCurrentItem() - 1);
-        }
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (slideShowHandler != null) {
-            slideShowHandler.removeCallbacks(runSlideShow);
-        }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        slideShowHandler.postDelayed(runSlideShow, 1000);
-    }
+//    @Override
+//    protected void onPause() {
+//        super.onPause();
+//        if (slideShowHandler != null) {
+//            slideShowHandler.removeCallbacks(runSlideShow);
+//        }
+//    }
+//
+//    @Override
+//    protected void onResume() {
+//        super.onResume();
+//        slideShowHandler.postDelayed(runSlideShow, 1000);
+//    }
 }

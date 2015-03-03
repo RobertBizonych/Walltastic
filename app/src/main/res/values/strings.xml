@@ -1,9 +1,11 @@
 <resources>
     <string name="app_name">LWPTraining</string>
 
-    <string name="hello_wallpaper">Hello wallpaper!</string>
+    <string name="hello_wallpaper">Apply wallpaper</string>
     <string name="action_settings">Settings</string>
     <string name="wallpaper_description">Training Wallpaper</string>
     <string name="select">Select</string>
     <string name="clear_selection">Clear selection</string>
+    <string name="select_picture">Select picture</string>
+    <string name="slideshow_description">Your wallpaper preview appears here</string>
 </resources>
