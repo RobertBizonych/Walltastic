@@ -16,6 +16,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
 
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+
 import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.Click;
 import org.androidannotations.annotations.EActivity;
@@ -30,9 +33,11 @@ import java.util.Set;
 public class MainActivity extends ActionBarActivity {
     private static final long SLIDESHOW_IMAGE_DURATION = 3000;
     @ViewById
-    ViewPager slideShow;
+    protected ViewPager slideShow;
     @ViewById
-    Button setWallpaper;
+    protected Button setWallpaper;
+    @ViewById
+    protected AdView adView;
     private SlideShowAdapter adapter;
     private static final int INTENT_REQUEST_GET_IMAGES = 13;
     private String[] imagesUri;
@@ -80,6 +85,9 @@ public class MainActivity extends ActionBarActivity {
         }
 
         setWallpaper.setEnabled(adapter != null);
+
+        AdRequest adRequest = new AdRequest.Builder().build();
+        adView.loadAd(adRequest);
     }
 
     private void playSlideShow() {
@@ -144,17 +152,17 @@ public class MainActivity extends ActionBarActivity {
         startActivity(intent);
     }
 
-//    @Override
-//    protected void onPause() {
-//        super.onPause();
-//        if (slideShowHandler != null) {
-//            slideShowHandler.removeCallbacks(runSlideShow);
-//        }
-//    }
-//
-//    @Override
-//    protected void onResume() {
-//        super.onResume();
-//        slideShowHandler.postDelayed(runSlideShow, 1000);
-//    }
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (slideShowHandler != null) {
+            slideShowHandler.removeCallbacks(runSlideShow);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        slideShowHandler.postDelayed(runSlideShow, 1000);
+    }
 }

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">LWPTraining</string>
+    <string name="app_name">WallTastic</string>
 
     <string name="hello_wallpaper">Apply wallpaper</string>
     <string name="action_settings">Settings</string>
@@ -8,4 +8,5 @@
     <string name="clear_selection">Clear selection</string>
     <string name="select_picture">Select picture</string>
     <string name="slideshow_description">Your wallpaper preview appears here</string>
+    <string name="banner_ad_unit_id">ca-app-pub-3940256099942544/6300978111</string>
 </resources>
